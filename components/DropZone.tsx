@@ -1,23 +1,16 @@
 "use client";
 
 import { useCallback } from "react";
-import { useDropzone } from "react-dropzone";
+import { useDropzone, type Accept } from "react-dropzone";
 
 interface DropZoneProps {
   files: File[];
   onFilesChange: (files: File[]) => void;
+  accept: Accept;
+  dropLabel?: string;
+  activeDropLabel?: string;
+  hintLabel?: string;
 }
-
-const ACCEPTED_TYPES = {
-  "image/jpeg": [".jpg", ".jpeg"],
-  "image/png": [".png"],
-  "image/webp": [".webp"],
-  "image/tiff": [".tiff", ".tif"],
-  "image/bmp": [".bmp"],
-  "image/gif": [".gif"],
-  "image/heic": [".heic"],
-  "image/heif": [".heif"],
-};
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) {
@@ -31,7 +24,14 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function DropZone({ files, onFilesChange }: DropZoneProps) {
+export function DropZone({
+  files,
+  onFilesChange,
+  accept,
+  dropLabel = "Drag and drop files here",
+  activeDropLabel = "Drop your files here",
+  hintLabel = "or click to browse.",
+}: DropZoneProps) {
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
       onFilesChange([...files, ...acceptedFiles]);
@@ -41,7 +41,7 @@ export function DropZone({ files, onFilesChange }: DropZoneProps) {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: ACCEPTED_TYPES,
+    accept,
     multiple: true,
   });
 
@@ -70,11 +70,9 @@ export function DropZone({ files, onFilesChange }: DropZoneProps) {
           </div>
           <div>
             <p className="text-lg font-medium text-slate-900">
-              {isDragActive ? "Drop your images here" : "Drag and drop images here"}
+              {isDragActive ? activeDropLabel : dropLabel}
             </p>
-            <p className="mt-1 text-sm text-slate-500">
-              or click to browse. Supports JPG, PNG, WEBP, TIFF, BMP, GIF, HEIC, and HEIF.
-            </p>
+            <p className="mt-1 text-sm text-slate-500">{hintLabel}</p>
           </div>
         </div>
       </div>

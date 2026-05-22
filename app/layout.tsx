@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { AppNav } from "@/components/AppNav";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,9 +14,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Image Converter",
+  title: {
+    default: "Media Converter",
+    template: "%s | Media Converter",
+  },
   description:
-    "Convert images between JPG, PNG, WEBP, TIFF, GIF, and HEIC formats.",
+    "Convert images and videos between common formats. Free, fast, and private.",
 };
 
 export default function RootLayout({
@@ -29,6 +33,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-slate-950 font-sans text-slate-100">
+        <AppNav />
         {children}
       </body>
     </html>

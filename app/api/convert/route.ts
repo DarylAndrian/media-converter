@@ -10,6 +10,9 @@ import {
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
+// Netlify synchronous functions reject request/response bodies above ~6 MB.
+const MAX_BATCH_UPLOAD_BYTES = 5 * 1024 * 1024;
+
 function getOutputFormat(value: FormDataEntryValue | null): OutputFormat {
   return normalizeOutputFormat(String(value ?? "png"));
 }
@@ -30,6 +33,20 @@ export async function POST(request: Request) {
 
     if (files.length === 0) {
       return Response.json({ error: "No files uploaded." }, { status: 400 });
+    }
+
+    if (files.length > 1) {
+      const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
+
+      if (totalBytes > MAX_BATCH_UPLOAD_BYTES) {
+        return Response.json(
+          {
+            error:
+              "Batch upload is too large for server-side processing. Convert files one at a time instead.",
+          },
+          { status: 413 },
+        );
+      }
     }
 
     if (files.length === 1) {

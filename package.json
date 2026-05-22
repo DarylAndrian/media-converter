@@ -10,6 +10,8 @@
     "postinstall": "node scripts/postinstall-sharp.js"
   },
   "dependencies": {
+    "@ffmpeg/ffmpeg": "^0.12.15",
+    "@ffmpeg/util": "^0.12.2",
     "heic-convert": "^2.1.0",
     "jszip": "^3.10.1",
     "next": "16.2.6",
