@@ -1,64 +1,200 @@
-import Image from "next/image";
+"use client";
+
+import { useMemo, useState } from "react";
+import { DropZone } from "@/components/DropZone";
+import { OUTPUT_FORMATS } from "@/lib/formats";
+
+const FORMAT_OPTIONS = OUTPUT_FORMATS.map((format) => ({
+  value: format,
+  label: format.toUpperCase(),
+}));
+
+function getFilenameFromDisposition(header: string | null, fallback: string): string {
+  if (!header) {
+    return fallback;
+  }
+
+  const match = header.match(/filename="([^"]+)"/i);
+  return match?.[1] ?? fallback;
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
 
 export default function Home() {
+  const [files, setFiles] = useState<File[]>([]);
+  const [format, setFormat] = useState<string>("png");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const canConvert = files.length > 0 && !loading;
+
+  const summary = useMemo(() => {
+    if (files.length === 0) {
+      return "Upload one or more images to get started.";
+    }
+
+    if (files.length === 1) {
+      return `Ready to convert ${files[0].name} to ${format.toUpperCase()}.`;
+    }
+
+    return `Ready to convert ${files.length} images to ${format.toUpperCase()} and download as a ZIP file.`;
+  }, [files, format]);
+
+  const handleConvert = async () => {
+    if (!canConvert) {
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setSuccessMessage(null);
+
+    try {
+      const formData = new FormData();
+      files.forEach((file) => formData.append("files", file));
+      formData.append("format", format);
+
+      const response = await fetch("/api/convert", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        throw new Error(payload?.error ?? "Conversion failed.");
+      }
+
+      const blob = await response.blob();
+      const fallbackName =
+        files.length === 1
+          ? `${files[0].name.replace(/\.[^/.]+$/, "")}.${format === "jpg" ? "jpg" : format}`
+          : "converted-images.zip";
+      const filename = getFilenameFromDisposition(
+        response.headers.get("Content-Disposition"),
+        fallbackName,
+      );
+
+      downloadBlob(blob, filename);
+      setSuccessMessage(
+        files.length === 1
+          ? `Downloaded ${filename}.`
+          : `Downloaded ${filename} with ${files.length} converted images.`,
+      );
+    } catch (convertError) {
+      setError(
+        convertError instanceof Error
+          ? convertError.message
+          : "Something went wrong during conversion.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="relative min-h-full overflow-hidden bg-slate-950 text-slate-100">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.25),_transparent_45%),radial-gradient(circle_at_bottom_right,_rgba(14,165,233,0.18),_transparent_35%)]" />
+
+      <main className="relative mx-auto flex min-h-full w-full max-w-4xl flex-col px-6 py-12 sm:px-8 sm:py-16">
+        <header className="mb-10 text-center sm:text-left">
+          <p className="mb-3 inline-flex rounded-full border border-indigo-400/30 bg-indigo-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-indigo-200">
+            Image Converter
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+          <h1 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+            Convert images to any common format
+          </h1>
+          <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300">
+            Upload a single image or a batch, choose your output format, and download
+            instantly. Supports JPG, PNG, WEBP, TIFF, BMP, GIF, and HEIC/HEIF input.
+          </p>
+        </header>
+
+        <section className="rounded-3xl border border-white/10 bg-white/95 p-6 text-slate-900 shadow-2xl shadow-indigo-950/30 backdrop-blur sm:p-8">
+          <div className="mb-6 grid gap-4 sm:grid-cols-[1fr_220px] sm:items-end">
+            <div>
+              <label
+                htmlFor="output-format"
+                className="mb-2 block text-sm font-medium text-slate-700"
+              >
+                Output format
+              </label>
+              <select
+                id="output-format"
+                value={format}
+                onChange={(event) => setFormat(event.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+              >
+                {FORMAT_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleConvert}
+              disabled={!canConvert}
+              className="inline-flex h-12 items-center justify-center rounded-xl bg-indigo-600 px-5 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-300"
+            >
+              {loading ? "Converting..." : "Convert and download"}
+            </button>
+          </div>
+
+          <DropZone files={files} onFilesChange={setFiles} />
+
+          <div className="mt-6 space-y-3">
+            <p className="text-sm text-slate-600">{summary}</p>
+
+            {error && (
+              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {error}
+              </div>
+            )}
+
+            {successMessage && (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                {successMessage}
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="mt-8 grid gap-4 sm:grid-cols-3">
+          {[
+            {
+              title: "Single or batch",
+              body: "Convert one image or upload many files and receive a ZIP archive.",
+            },
+            {
+              title: "HEIC friendly",
+              body: "Import iPhone HEIC/HEIF photos and export them as JPG, PNG, WEBP, and more.",
+            },
+            {
+              title: "Netlify ready",
+              body: "Built for deployment on Netlify with server-side conversion powered by sharp.",
+            },
+          ].map((item) => (
+            <article
+              key={item.title}
+              className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur"
+            >
+              <h2 className="text-sm font-semibold text-white">{item.title}</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-300">{item.body}</p>
+            </article>
+          ))}
+        </section>
       </main>
     </div>
   );
