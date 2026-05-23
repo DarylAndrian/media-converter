@@ -2,10 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { FFmpeg } from "@ffmpeg/ffmpeg";
-import { toCachedBlobURL } from "@/lib/ffmpeg-cache";
+import { warmupFfmpegAssets } from "@/lib/ffmpeg-cache";
 
 const CORE_VERSION = "0.12.9";
-const LOAD_TIMEOUT_MS = 120_000;
+const LOAD_TIMEOUT_MS = 180_000;
 
 type FfmpegState = "idle" | "loading" | "ready" | "error";
 
@@ -41,40 +41,53 @@ function withTimeout<T>(promise: Promise<T>, message: string): Promise<T> {
   });
 }
 
+async function verifyWorkerAsset(url: string): Promise<void> {
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`Missing ffmpeg asset at ${url} (${response.status}).`);
+  }
+
+  await response.text();
+}
+
 async function createFfmpegInstance(): Promise<FFmpeg> {
   const [{ FFmpeg }] = await Promise.all([import("@ffmpeg/ffmpeg")]);
 
   const ffmpeg = new FFmpeg();
   const assetBase = getAssetBaseUrl();
+  const coreURL = `${assetBase}/ffmpeg-core.js`;
+  const wasmURL = `${assetBase}/ffmpeg-core.wasm`;
+  const classWorkerURL = `${assetBase}/worker/worker.js`;
 
-  notifyProgress(5);
+  const loadLogs: string[] = [];
+  ffmpeg.on("log", ({ message }) => {
+    loadLogs.push(message);
+  });
 
-  const coreURL = await toCachedBlobURL(
-    `${assetBase}/ffmpeg-core.js`,
-    "text/javascript",
-    `ffmpeg-core.js@${CORE_VERSION}`,
-    (ratio) => {
-      notifyProgress(5 + ratio * 15);
-    },
-  );
+  notifyProgress(0);
 
-  const wasmURL = await toCachedBlobURL(
-    `${assetBase}/ffmpeg-core.wasm`,
-    "application/wasm",
-    `ffmpeg-core.wasm@${CORE_VERSION}`,
-    (ratio) => {
-      notifyProgress(20 + ratio * 70);
-    },
-  );
+  await verifyWorkerAsset(classWorkerURL);
+  await warmupFfmpegAssets(assetBase, CORE_VERSION, notifyProgress);
 
   notifyProgress(92);
 
-  // Serve worker from /public to bypass Turbopack's worker bootstrap.
-  await ffmpeg.load({
-    coreURL,
-    wasmURL,
-    classWorkerURL: `${assetBase}/worker/worker.js`,
-  });
+  // Use same-origin HTTP URLs (not blob URLs) so the module worker can load them.
+  try {
+    await ffmpeg.load({
+      coreURL,
+      wasmURL,
+      classWorkerURL,
+    });
+  } catch (loadError) {
+    const recentLogs = loadLogs.slice(-5).join("\n");
+    const baseMessage =
+      loadError instanceof Error ? loadError.message : "ffmpeg.load() failed.";
+
+    throw new Error(
+      recentLogs ? `${baseMessage}\n${recentLogs}` : baseMessage,
+    );
+  }
 
   notifyProgress(100);
 
@@ -91,11 +104,9 @@ async function loadFfmpeg(): Promise<FFmpeg> {
     return loadPromise;
   }
 
-  notifyProgress(0);
-
   loadPromise = withTimeout(
     createFfmpegInstance(),
-    "Video converter timed out while loading. Refresh and try again.",
+    "Video converter timed out while initializing. Large WASM files can take up to 3 minutes on first load — refresh and try again.",
   )
     .then((ffmpeg) => {
       ffmpegInstance = ffmpeg;

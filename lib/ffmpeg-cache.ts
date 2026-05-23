@@ -137,14 +137,24 @@ export async function fetchAssetWithCache(
   return data.buffer;
 }
 
-export async function toCachedBlobURL(
-  url: string,
-  mimeType: string,
-  cacheKey: string,
-  onProgress?: (loadedRatio: number) => void,
-): Promise<string> {
-  const data = await fetchAssetWithCache(url, cacheKey, onProgress);
-  const blob = new Blob([data], { type: mimeType });
+export async function warmupFfmpegAssets(
+  assetBase: string,
+  version: string,
+  onProgress?: (progress: number) => void,
+): Promise<void> {
+  await fetchAssetWithCache(
+    `${assetBase}/ffmpeg-core.js`,
+    `ffmpeg-core.js@${version}`,
+    (ratio) => {
+      onProgress?.(5 + ratio * 15);
+    },
+  );
 
-  return URL.createObjectURL(blob);
+  await fetchAssetWithCache(
+    `${assetBase}/ffmpeg-core.wasm`,
+    `ffmpeg-core.wasm@${version}`,
+    (ratio) => {
+      onProgress?.(20 + ratio * 70);
+    },
+  );
 }

@@ -57,11 +57,15 @@ export default function VideoPage() {
     }
 
     if (isLoading) {
-      if (loadProgress !== null && loadProgress < 100) {
-        return `Loading converter engine... ${loadProgress}% complete. This is a one-time download (~31 MB) and will be cached for future visits.`;
+      if (loadProgress !== null && loadProgress >= 92 && loadProgress < 100) {
+        return `Initializing converter engine... ${loadProgress}%. Compiling WASM can take up to a minute on first load.`;
       }
 
-      return "Loading converter engine... This is a one-time download (~31 MB) and will be cached for future visits.";
+      if (loadProgress !== null && loadProgress < 92) {
+        return `Downloading converter engine... ${loadProgress}% complete. This is a one-time download (~31 MB) and will be cached for future visits.`;
+      }
+
+      return "Loading converter engine...";
     }
 
     if (state === "idle") {

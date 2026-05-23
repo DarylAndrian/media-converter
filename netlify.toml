@@ -11,3 +11,8 @@
 
 [functions]
   included_files = ["node_modules/sharp/**"]
+
+[[headers]]
+  for = "/ffmpeg/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
