@@ -18,7 +18,14 @@ const FORMAT_OPTIONS = VIDEO_OUTPUT_FORMATS.map((format) => ({
 }));
 
 export default function VideoPage() {
-  const { load, state, error: ffmpegError, isReady, isLoading } = useFfmpeg();
+  const {
+    load,
+    state,
+    error: ffmpegError,
+    isReady,
+    isLoading,
+    loadProgress,
+  } = useFfmpeg();
   const [files, setFiles] = useState<File[]>([]);
   const [format, setFormat] = useState<string>("mp4");
   const [loading, setLoading] = useState(false);
@@ -49,8 +56,16 @@ export default function VideoPage() {
       return "Video converter failed to load. Refresh the page to try again.";
     }
 
-    if (isLoading || state === "idle") {
-      return "Loading converter engine... This is a one-time download (~31 MB) and will be cached by your browser.";
+    if (isLoading) {
+      if (loadProgress !== null && loadProgress < 100) {
+        return `Loading converter engine... ${loadProgress}% complete. This is a one-time download (~31 MB) and will be cached for future visits.`;
+      }
+
+      return "Loading converter engine... This is a one-time download (~31 MB) and will be cached for future visits.";
+    }
+
+    if (state === "idle") {
+      return "Preparing video converter...";
     }
 
     if (files.length === 0) {
@@ -62,7 +77,7 @@ export default function VideoPage() {
     }
 
     return `Ready to convert ${files.length} videos to ${format.toUpperCase()} and download as a ZIP file. Each video is converted one at a time in your browser.`;
-  }, [files, format, isLoading, isReady, state]);
+  }, [files, format, isLoading, isReady, loadProgress, state]);
 
   const handleConvert = async () => {
     if (!canConvert) {
@@ -116,8 +131,10 @@ export default function VideoPage() {
   };
 
   const buttonLabel = (() => {
-    if (isLoading || (state === "idle" && !isReady)) {
-      return "Loading converter...";
+    if (isLoading || state === "idle") {
+      return loadProgress !== null && loadProgress < 100
+        ? `Loading converter... ${loadProgress}%`
+        : "Loading converter...";
     }
 
     if (loading) {

@@ -1,89 +1,165 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { FFmpeg } from "@ffmpeg/ffmpeg";
+import { toCachedBlobURL } from "@/lib/ffmpeg-cache";
 
-const FFMPEG_VERSION = "0.12.15";
-const CORE_VERSION = "0.12.6";
+const CORE_VERSION = "0.12.9";
+const LOAD_TIMEOUT_MS = 120_000;
 
 type FfmpegState = "idle" | "loading" | "ready" | "error";
 
+let ffmpegInstance: FFmpeg | null = null;
+let loadPromise: Promise<FFmpeg> | null = null;
+const progressListeners = new Set<(progress: number) => void>();
+
+function notifyProgress(progress: number) {
+  for (const listener of progressListeners) {
+    listener(progress);
+  }
+}
+
+function getAssetBaseUrl(): string {
+  return `${window.location.origin}/ffmpeg`;
+}
+
+function withTimeout<T>(promise: Promise<T>, message: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timeoutId = window.setTimeout(() => {
+      reject(new Error(message));
+    }, LOAD_TIMEOUT_MS);
+
+    promise
+      .then((value) => {
+        window.clearTimeout(timeoutId);
+        resolve(value);
+      })
+      .catch((error: unknown) => {
+        window.clearTimeout(timeoutId);
+        reject(error);
+      });
+  });
+}
+
+async function createFfmpegInstance(): Promise<FFmpeg> {
+  const [{ FFmpeg }] = await Promise.all([import("@ffmpeg/ffmpeg")]);
+
+  const ffmpeg = new FFmpeg();
+  const assetBase = getAssetBaseUrl();
+
+  notifyProgress(5);
+
+  const coreURL = await toCachedBlobURL(
+    `${assetBase}/ffmpeg-core.js`,
+    "text/javascript",
+    `ffmpeg-core.js@${CORE_VERSION}`,
+    (ratio) => {
+      notifyProgress(5 + ratio * 15);
+    },
+  );
+
+  const wasmURL = await toCachedBlobURL(
+    `${assetBase}/ffmpeg-core.wasm`,
+    "application/wasm",
+    `ffmpeg-core.wasm@${CORE_VERSION}`,
+    (ratio) => {
+      notifyProgress(20 + ratio * 70);
+    },
+  );
+
+  notifyProgress(92);
+
+  // Do not pass classWorkerURL — a blob worker cannot resolve its ESM imports.
+  // Let @ffmpeg/ffmpeg use its bundled module worker instead.
+  await ffmpeg.load({ coreURL, wasmURL });
+
+  notifyProgress(100);
+
+  return ffmpeg;
+}
+
+async function loadFfmpeg(): Promise<FFmpeg> {
+  if (ffmpegInstance?.loaded) {
+    notifyProgress(100);
+    return ffmpegInstance;
+  }
+
+  if (loadPromise) {
+    return loadPromise;
+  }
+
+  notifyProgress(0);
+
+  loadPromise = withTimeout(
+    createFfmpegInstance(),
+    "Video converter timed out while loading. Refresh and try again.",
+  )
+    .then((ffmpeg) => {
+      ffmpegInstance = ffmpeg;
+      return ffmpeg;
+    })
+    .catch((error) => {
+      loadPromise = null;
+      ffmpegInstance = null;
+      throw error;
+    });
+
+  return loadPromise;
+}
+
 export function useFfmpeg() {
-  const ffmpegRef = useRef<FFmpeg | null>(null);
-  const loadPromiseRef = useRef<Promise<FFmpeg> | null>(null);
-  const [state, setState] = useState<FfmpegState>("idle");
+  const [state, setState] = useState<FfmpegState>(() =>
+    ffmpegInstance?.loaded ? "ready" : "idle",
+  );
   const [error, setError] = useState<string | null>(null);
+  const [loadProgress, setLoadProgress] = useState<number | null>(() =>
+    ffmpegInstance?.loaded ? 100 : null,
+  );
 
   const load = useCallback(async (): Promise<FFmpeg> => {
-    if (ffmpegRef.current?.loaded) {
-      return ffmpegRef.current;
-    }
-
-    if (loadPromiseRef.current) {
-      return loadPromiseRef.current;
+    if (ffmpegInstance?.loaded) {
+      setState("ready");
+      setLoadProgress(100);
+      return ffmpegInstance;
     }
 
     setState("loading");
     setError(null);
 
-    loadPromiseRef.current = (async () => {
-      const [{ FFmpeg }, { toBlobURL }] = await Promise.all([
-        import("@ffmpeg/ffmpeg"),
-        import("@ffmpeg/util"),
-      ]);
-
-      const ffmpeg = new FFmpeg();
-      const useMultiThread =
-        typeof window !== "undefined" && window.crossOriginIsolated;
-
-      const coreBase = useMultiThread
-        ? `https://unpkg.com/@ffmpeg/core-mt@${CORE_VERSION}/dist/umd`
-        : `https://unpkg.com/@ffmpeg/core@${CORE_VERSION}/dist/umd`;
-
-      const loadConfig: {
-        coreURL: string;
-        wasmURL: string;
-        workerURL?: string;
-        classWorkerURL: string;
-      } = {
-        coreURL: await toBlobURL(`${coreBase}/ffmpeg-core.js`, "text/javascript"),
-        wasmURL: await toBlobURL(`${coreBase}/ffmpeg-core.wasm`, "application/wasm"),
-        classWorkerURL: await toBlobURL(
-          `https://unpkg.com/@ffmpeg/ffmpeg@${FFMPEG_VERSION}/dist/esm/worker.js`,
-          "text/javascript",
-        ),
-      };
-
-      if (useMultiThread) {
-        loadConfig.workerURL = await toBlobURL(
-          `${coreBase}/ffmpeg-core.worker.js`,
-          "text/javascript",
-        );
-      }
-
-      await ffmpeg.load(loadConfig);
-
-      ffmpegRef.current = ffmpeg;
+    try {
+      const ffmpeg = await loadFfmpeg();
+      setLoadProgress(100);
       setState("ready");
       return ffmpeg;
-    })().catch((loadError) => {
-      loadPromiseRef.current = null;
+    } catch (loadError) {
       const message =
         loadError instanceof Error
           ? loadError.message
           : "Failed to load video converter.";
       setError(message);
       setState("error");
+      setLoadProgress(null);
       throw loadError;
-    });
+    }
+  }, []);
 
-    return loadPromiseRef.current;
+  useEffect(() => {
+    const listener = (progress: number) => {
+      setLoadProgress(Math.round(progress));
+    };
+
+    progressListeners.add(listener);
+
+    return () => {
+      progressListeners.delete(listener);
+    };
   }, []);
 
   return {
     load,
     state,
     error,
+    loadProgress,
     isReady: state === "ready",
     isLoading: state === "loading",
   };

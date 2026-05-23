@@ -4,12 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "node ./node_modules/next/dist/bin/next dev",
-    "build": "node ./node_modules/next/dist/bin/next build",
+    "build": "node scripts/copy-ffmpeg-core.js && node ./node_modules/next/dist/bin/next build",
     "start": "node ./node_modules/next/dist/bin/next start",
     "lint": "node ./node_modules/eslint/bin/eslint.js .",
-    "postinstall": "node scripts/postinstall-sharp.js"
+    "postinstall": "node scripts/postinstall-sharp.js && node scripts/copy-ffmpeg-core.js"
   },
   "dependencies": {
+    "@ffmpeg/core": "0.12.9",
     "@ffmpeg/ffmpeg": "^0.12.15",
     "@ffmpeg/util": "^0.12.2",
     "heic-convert": "^2.1.0",
