@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 const NAV_ITEMS = [
   { href: "/", label: "Image" },
   { href: "/video", label: "Video" },
+  { href: "/remove-background", label: "Background Remover" },
 ] as const;
 
 export function AppNav() {
