@@ -69,9 +69,12 @@ async function createFfmpegInstance(): Promise<FFmpeg> {
 
   notifyProgress(92);
 
-  // Do not pass classWorkerURL — a blob worker cannot resolve its ESM imports.
-  // Let @ffmpeg/ffmpeg use its bundled module worker instead.
-  await ffmpeg.load({ coreURL, wasmURL });
+  // Serve worker from /public to bypass Turbopack's worker bootstrap.
+  await ffmpeg.load({
+    coreURL,
+    wasmURL,
+    classWorkerURL: `${assetBase}/worker/worker.js`,
+  });
 
   notifyProgress(100);
 
