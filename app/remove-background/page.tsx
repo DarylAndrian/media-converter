@@ -68,102 +68,111 @@ export default function RemoveBackgroundPage() {
   };
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-12 sm:px-8">
-      <div className="mb-12">
-        <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-          Background Remover
-        </h1>
-        <p className="mt-4 text-lg text-slate-400">
-          Remove backgrounds from images instantly. Runs entirely in your browser using AI.
-        </p>
-      </div>
+    <div className="relative min-h-full overflow-hidden bg-slate-950 text-slate-100">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.25),_transparent_45%),radial-gradient(circle_at_bottom_right,_rgba(14,165,233,0.18),_transparent_35%)]" />
 
-      <div className="space-y-8">
-        {!file && (
-          <DropZone
-            files={[]}
-            onFilesChange={handleFilesChange}
-            accept={{ "image/*": [".jpg", ".jpeg", ".png", ".webp"] }}
-            dropLabel="Drag & drop an image here"
-            activeDropLabel="Drop to start"
-            hintLabel="Supports JPG, PNG, and WebP"
-          />
-        )}
+      <main className="relative mx-auto flex min-h-full w-full max-w-4xl flex-col px-6 py-12 sm:px-8 sm:py-16">
+        <header className="mb-10 text-center sm:text-left">
+          <p className="mb-3 inline-flex rounded-full border border-indigo-400/30 bg-indigo-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-indigo-200">
+            Background Remover
+          </p>
+          <h1 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+            Background Remover
+          </h1>
+          <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300">
+            Remove backgrounds from images instantly. Runs entirely in your browser using AI.
+          </p>
+        </header>
 
-        {file && originalUrl && (
-          <div className="rounded-2xl border border-white/10 bg-slate-900/50 p-6 backdrop-blur">
-            <div className="mb-6 flex items-center justify-between">
+        <section className="rounded-3xl border border-white/10 bg-white/95 p-6 text-slate-900 shadow-2xl shadow-indigo-950/30 backdrop-blur sm:p-8">
+          <div className="space-y-8">
+            {!file && (
+              <DropZone
+                files={[]}
+                onFilesChange={handleFilesChange}
+                accept={{ "image/*": [".jpg", ".jpeg", ".png", ".webp"] }}
+                dropLabel="Drag & drop an image here"
+                activeDropLabel="Drop to start"
+                hintLabel="Supports JPG, PNG, and WebP"
+              />
+            )}
+
+            {file && originalUrl && (
               <div>
-                <h3 className="text-lg font-medium text-white">{file.name}</h3>
-                <p className="text-sm text-slate-400">
-                  {(file.size / (1024 * 1024)).toFixed(2)} MB
-                </p>
-              </div>
-              <button
-                onClick={() => handleFilesChange([])}
-                className="text-sm font-medium text-slate-400 hover:text-white transition-colors"
-                disabled={isProcessing}
-              >
-                Clear
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-slate-400">Original</p>
-                <div className="relative aspect-video overflow-hidden rounded-xl border border-white/10 bg-black/50">
-                  <img
-                    src={originalUrl}
-                    alt="Original"
-                    className="h-full w-full object-contain"
-                  />
+                <div className="mb-6 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-medium text-slate-900">{file.name}</h3>
+                    <p className="text-sm text-slate-500">
+                      {(file.size / (1024 * 1024)).toFixed(2)} MB
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleFilesChange([])}
+                    className="text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors"
+                    disabled={isProcessing}
+                  >
+                    Clear
+                  </button>
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-slate-400">Result</p>
-                <div className="relative aspect-video overflow-hidden rounded-xl border border-white/10 bg-slate-800/50 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCI+CjxyZWN0IHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIgZmlsbD0iI2ZmZiIgZmlsbC1vcGFjaXR5PSIwLjEiLz4KPHJlY3QgeD0iMTAiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIgZmlsbD0iIzAwMCIgZmlsbC1vcGFjaXR5PSIwLjEiLz4KPHJlY3QgeT0iMTAiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIgZmlsbD0iIzAwMCIgZmlsbC1vcGFjaXR5PSIwLjEiLz4KPHJlY3QgeD0iMTAiIHk9IjEwIiB3aWR0aD0iMTAiIGhlaWdodD0iMTAiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIi8+Cjwvc3ZnPg==')]">
-                  {resultUrl ? (
-                    <img
-                      src={resultUrl}
-                      alt="Result"
-                      className="h-full w-full object-contain"
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center">
-                      <span className="text-sm text-slate-500">
-                        {isProcessing ? progress || "Processing..." : "Not processed yet"}
-                      </span>
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-slate-700">Original</p>
+                    <div className="relative aspect-video overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
+                      <img
+                        src={originalUrl}
+                        alt="Original"
+                        className="h-full w-full object-contain"
+                      />
                     </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-slate-700">Result</p>
+                    <div className="relative aspect-video overflow-hidden rounded-xl border border-slate-200 bg-slate-100 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCI+CjxyZWN0IHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIgZmlsbD0iI2ZmZiIgZmlsbC1vcGFjaXR5PSIwLjEiLz4KPHJlY3QgeD0iMTAiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIgZmlsbD0iIzAwMCIgZmlsbC1vcGFjaXR5PSIwLjEiLz4KPHJlY3QgeT0iMTAiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIgZmlsbD0iIzAwMCIgZmlsbC1vcGFjaXR5PSIwLjEiLz4KPHJlY3QgeD0iMTAiIHk9IjEwIiB3aWR0aD0iMTAiIGhlaWdodD0iMTAiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIi8+Cjwvc3ZnPg==')]">
+                      {resultUrl ? (
+                        <img
+                          src={resultUrl}
+                          alt="Result"
+                          className="h-full w-full object-contain"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center">
+                          <span className="text-sm text-slate-500">
+                            {isProcessing ? progress || "Processing..." : "Not processed yet"}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-8 flex items-center justify-center gap-4">
+                  {!resultUrl ? (
+                    <button
+                      onClick={processImage}
+                      disabled={isProcessing}
+                      className="rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50"
+                    >
+                      {isProcessing ? "Processing..." : "Remove Background"}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleDownload}
+                      className="rounded-lg bg-green-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-green-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600"
+                    >
+                      Download Transparent PNG
+                    </button>
                   )}
                 </div>
+                {isProcessing && (
+                  <p className="mt-4 text-center text-sm text-slate-500">{progress}</p>
+                )}
               </div>
-            </div>
-
-            <div className="mt-8 flex items-center justify-center gap-4">
-              {!resultUrl ? (
-                <button
-                  onClick={processImage}
-                  disabled={isProcessing}
-                  className="rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50"
-                >
-                  {isProcessing ? "Processing..." : "Remove Background"}
-                </button>
-              ) : (
-                <button
-                  onClick={handleDownload}
-                  className="rounded-lg bg-green-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-green-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600"
-                >
-                  Download Transparent PNG
-                </button>
-              )}
-            </div>
-            {isProcessing && (
-              <p className="mt-4 text-center text-sm text-slate-400">{progress}</p>
             )}
           </div>
-        )}
-      </div>
-    </main>
+        </section>
+      </main>
+    </div>
   );
 }

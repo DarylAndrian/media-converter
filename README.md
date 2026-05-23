@@ -1,4 +1,4 @@
-# Image Converter
+# Media Converter
 
 A web app for converting images between common formats. Upload one file or many, pick an output format, and download the result instantly.
 
