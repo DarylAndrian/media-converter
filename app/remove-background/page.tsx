@@ -6,6 +6,12 @@ import { removeBackground } from "@imgly/background-removal";
 
 type QualityMode = "fast" | "high";
 
+/** Client-side edge smoothing config per quality mode. */
+const EDGE_CONFIG = {
+  fast: { blurRadius: 1, passes: 1 },
+  high: { blurRadius: 2, passes: 2 },
+} as const;
+
 /**
  * Apply a Gaussian-like blur to the alpha channel edges on the client side.
  * Uses canvas to soften jagged segmentation edges.
@@ -105,12 +111,17 @@ function smoothAlphaEdges(
  */
 async function removeBackgroundClient(
   file: File,
+  quality: QualityMode,
   onProgress?: (message: string) => void,
 ): Promise<Blob> {
   onProgress?.("Initializing model (this may take a moment on first run)...");
 
+  const edgeCfg = EDGE_CONFIG[quality];
+
   const config = {
-    model: "isnet" as const,
+    model: (quality === "fast" ? "isnet_quint8" : "isnet") as
+      | "isnet_quint8"
+      | "isnet",
     progress: (key: string, current: number, total: number) => {
       if (key.includes("fetch")) {
         onProgress?.(
@@ -139,8 +150,11 @@ async function removeBackgroundClient(
       ctx.drawImage(img, 0, 0);
       URL.revokeObjectURL(url);
 
-      // Apply edge smoothing (2-pass box blur with radius ~1.5)
-      const smoothed = smoothAlphaEdges(canvas, 2);
+      // Apply edge smoothing with quality-specific config
+      const smoothed = smoothAlphaEdges(
+        canvas,
+        edgeCfg.blurRadius,
+      );
 
       smoothed.toBlob(
         (blob) => {
@@ -160,52 +174,6 @@ async function removeBackgroundClient(
     };
     img.src = url;
   });
-}
-
-/**
- * Server-side background removal via API.
- */
-async function removeBackgroundServerSide(
-  file: File,
-  quality: "fast" | "high",
-  onProgress?: (message: string) => void,
-): Promise<{ blob: Blob; filename: string }> {
-  onProgress?.("Sending image to server...");
-
-  const formData = new FormData();
-  formData.append("image", file);
-  formData.append("quality", quality);
-
-  const response = await fetch("/api/remove-background", {
-    method: "POST",
-    body: formData,
-  });
-
-  if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as {
-      error?: string;
-    } | null;
-
-    if (response.status === 413) {
-      throw new Error(
-        payload?.error ??
-        "Image is too large for server-side processing. Try Fast mode instead.",
-      );
-    }
-
-    throw new Error(payload?.error ?? "Server-side background removal failed.");
-  }
-
-  const blob = await response.blob();
-
-  // Extract filename from Content-Disposition header
-  const disposition = response.headers.get("Content-Disposition");
-  const match = disposition?.match(/filename="([^"]+)"/i);
-  const nameWithoutExt =
-    file.name.substring(0, file.name.lastIndexOf(".")) || file.name;
-  const filename = match?.[1] ?? `${nameWithoutExt}-nobg.png`;
-
-  return { blob, filename };
 }
 
 export default function RemoveBackgroundPage() {
@@ -246,48 +214,27 @@ export default function RemoveBackgroundPage() {
       setProgress("");
       setError(null);
 
-      if (quality === "fast") {
-        // Client-side processing with edge smoothing
-        const resultBlob = await removeBackgroundClient(
-          file,
-          setProgress,
-        );
+      // Both modes run client-side — fast uses quantized model, high uses full model + stronger smoothing
+      const resultBlob = await removeBackgroundClient(
+        file,
+        quality,
+        setProgress,
+      );
 
-        // Clean up previous object URL
-        if (objectUrlRef.current) {
-          URL.revokeObjectURL(objectUrlRef.current);
-        }
-
-        const url = URL.createObjectURL(resultBlob);
-        objectUrlRef.current = url;
-        setResultUrl(url);
-
-        const nameWithoutExt =
-          file.name.substring(0, file.name.lastIndexOf(".")) ||
-          file.name;
-        setResultFilename(`${nameWithoutExt}-nobg.png`);
-        setProgress("Done!");
-      } else {
-        // Server-side processing with edge refinement
-        setProgress("Processing on server (this may take a moment)...");
-
-        const { blob, filename } = await removeBackgroundServerSide(
-          file,
-          "high",
-          setProgress,
-        );
-
-        // Clean up previous object URL
-        if (objectUrlRef.current) {
-          URL.revokeObjectURL(objectUrlRef.current);
-        }
-
-        const url = URL.createObjectURL(blob);
-        objectUrlRef.current = url;
-        setResultUrl(url);
-        setResultFilename(filename);
-        setProgress("Done!");
+      // Clean up previous object URL
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
       }
+
+      const url = URL.createObjectURL(resultBlob);
+      objectUrlRef.current = url;
+      setResultUrl(url);
+
+      const nameWithoutExt =
+        file.name.substring(0, file.name.lastIndexOf(".")) ||
+        file.name;
+      setResultFilename(`${nameWithoutExt}-nobg.png`);
+      setProgress("Done!");
     } catch (err) {
       console.error("Error removing background:", err);
       setError(
@@ -325,8 +272,8 @@ export default function RemoveBackgroundPage() {
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300">
             Remove backgrounds from images with AI-powered edge
-            refinement. Choose between fast browser-based processing
-            or high-quality server-side processing.
+            refinement — right in your browser. Choose between fast
+            processing or high-quality mode with stronger smoothing.
           </p>
         </header>
 
@@ -343,8 +290,8 @@ export default function RemoveBackgroundPage() {
                   onClick={() => setQuality("fast")}
                   disabled={isProcessing}
                   className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${quality === "fast"
-                      ? "bg-white text-slate-900 shadow-sm"
-                      : "text-slate-500 hover:text-slate-700"
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
                     }`}
                 >
                   ⚡ Fast
@@ -354,8 +301,8 @@ export default function RemoveBackgroundPage() {
                   onClick={() => setQuality("high")}
                   disabled={isProcessing}
                   className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${quality === "high"
-                      ? "bg-white text-slate-900 shadow-sm"
-                      : "text-slate-500 hover:text-slate-700"
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
                     }`}
                 >
                   ✨ High Quality
@@ -363,8 +310,8 @@ export default function RemoveBackgroundPage() {
               </div>
               <p className="mt-2 text-xs text-slate-500">
                 {quality === "fast"
-                  ? "Runs in your browser — instant but basic edge quality."
-                  : "Server-side processing with AI edge refinement for smoother results."}
+                  ? "Uses a quantized model for faster processing with basic edge smoothing."
+                  : "Uses the full-precision model with stronger edge smoothing for cleaner results."}
               </p>
             </div>
 
@@ -499,9 +446,10 @@ export default function RemoveBackgroundPage() {
 
                 {resultUrl && !isProcessing && (
                   <p className="mt-4 text-center text-xs text-slate-400">
+                    Processed in your browser with
                     {quality === "fast"
-                      ? "Processed in your browser with edge smoothing."
-                      : "Processed on server with AI edge refinement."}
+                      ? " basic edge smoothing."
+                      : " AI-powered edge refinement."}
                   </p>
                 )}
               </div>
