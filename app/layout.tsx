@@ -20,6 +20,9 @@ export const metadata: Metadata = {
   },
   description:
     "Convert images and videos between common formats. Free, fast, and private.",
+  icons: {
+    icon: "/logo.webp",
+  },
 };
 
 export default function RootLayout({

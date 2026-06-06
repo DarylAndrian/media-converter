@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -17,9 +18,16 @@ export function AppNav() {
       <div className="mx-auto flex max-w-4xl items-center gap-1 px-6 py-3 sm:px-8">
         <Link
           href="/"
-          className="mr-4 text-sm font-semibold tracking-tight text-white"
+          className="mr-4 flex items-center gap-2 text-sm font-semibold tracking-tight text-white"
         >
-          Media Converter
+          <Image
+            src="/logo.webp"
+            alt="Media Converter Logo"
+            width={24}
+            height={24}
+            className="rounded-lg"
+          />
+          <span>Media Converter</span>
         </Link>
         {NAV_ITEMS.map((item) => {
           const isActive =
