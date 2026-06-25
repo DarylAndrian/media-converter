@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 const NAV_ITEMS = [
   { href: "/", label: "Image" },
   { href: "/video", label: "Video" },
+  { href: "/video-to-audio", label: "Video to Audio" },
   { href: "/remove-background", label: "Background Remover" },
 ] as const;
 

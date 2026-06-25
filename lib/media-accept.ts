@@ -16,3 +16,11 @@ export const VIDEO_ACCEPT = {
   "video/x-matroska": [".mkv"],
   "video/webm": [".webm"],
 } as const;
+
+export const AUDIO_INPUT_ACCEPT = {
+  "video/mp4": [".mp4"],
+  "video/quicktime": [".mov"],
+  "video/x-msvideo": [".avi"],
+  "video/x-matroska": [".mkv"],
+  "video/webm": [".webm"],
+} as const;
