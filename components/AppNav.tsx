@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
   { href: "/", label: "Image" },
+  { href: "/compress", label: "Compress" },
   { href: "/video", label: "Video" },
   { href: "/video-to-audio", label: "Video to Audio" },
   { href: "/remove-background", label: "Background Remover" },
@@ -32,7 +33,9 @@ export function AppNav() {
         </Link>
         {NAV_ITEMS.map((item) => {
           const isActive =
-            item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+            item.href === "/"
+              ? pathname === "/"
+              : pathname === item.href || pathname.startsWith(`${item.href}/`);
 
           return (
             <Link

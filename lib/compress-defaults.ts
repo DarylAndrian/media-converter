@@ -1,0 +1,3 @@
+export const COMPRESS_DEFAULT_TARGET_BYTES = Math.floor(1.5 * 1024 * 1024);
+
+export const COMPRESS_MIN_TARGET_BYTES = 1024;
