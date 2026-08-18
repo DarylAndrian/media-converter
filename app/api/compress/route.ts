@@ -6,16 +6,16 @@ import {
   replaceFileExtension,
   type OutputFormat,
 } from "@/lib/formats";
+import {
+  SERVER_MAX_UPLOAD_BYTES,
+  serverUploadLimitMB,
+} from "@/lib/server-upload-limit";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-// Netlify synchronous functions reject request/response bodies above ~6 MB.
-// Compress endpoint accepts larger single uploads because compression is the
-// primary use case (large file → smaller output), but we still cap to keep
-// serverless execution predictable.
-const MAX_SINGLE_UPLOAD_BYTES = 25 * 1024 * 1024;
-const MAX_BATCH_UPLOAD_BYTES = 25 * 1024 * 1024;
+// Server-side fallback only (common formats compress in the browser). The cap
+// matches the Netlify request-body ceiling — see lib/server-upload-limit.ts.
 
 function getTargetBytes(value: FormDataEntryValue | null): number {
   const raw = Number(value);
@@ -54,29 +54,15 @@ export async function POST(request: Request) {
       return Response.json({ error: "No files uploaded." }, { status: 400 });
     }
 
-    if (files.some((file) => file.size > MAX_SINGLE_UPLOAD_BYTES)) {
+    const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
+
+    if (totalBytes > SERVER_MAX_UPLOAD_BYTES) {
       return Response.json(
         {
-          error: `Each file must be under ${Math.floor(
-            MAX_SINGLE_UPLOAD_BYTES / (1024 * 1024),
-          )} MB. Compress larger files locally or in smaller batches.`,
+          error: `Upload must be under ${serverUploadLimitMB()} MB for server-side compression.`,
         },
         { status: 413 },
       );
-    }
-
-    if (files.length > 1) {
-      const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
-
-      if (totalBytes > MAX_BATCH_UPLOAD_BYTES) {
-        return Response.json(
-          {
-            error:
-              "Batch upload is too large for server-side processing. Compress files one at a time instead.",
-          },
-          { status: 413 },
-        );
-      }
     }
 
     if (files.length === 1) {

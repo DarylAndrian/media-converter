@@ -1,9 +1,14 @@
 import { removeBackgroundServer } from "@/lib/remove-bg";
+import {
+    SERVER_MAX_UPLOAD_BYTES,
+    serverUploadLimitMB,
+} from "@/lib/server-upload-limit";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10 MB
+// The page processes images in the browser; this server route is a fallback and
+// is capped at the Netlify request-body ceiling (see lib/server-upload-limit.ts).
 
 export async function POST(request: Request) {
     try {
@@ -18,11 +23,10 @@ export async function POST(request: Request) {
             );
         }
 
-        if (file.size > MAX_UPLOAD_BYTES) {
+        if (file.size > SERVER_MAX_UPLOAD_BYTES) {
             return Response.json(
                 {
-                    error:
-                        "Image is too large for server-side processing. Please use an image under 10 MB, or try the Fast (client-side) mode.",
+                    error: `Image is too large for server-side processing. Please use an image under ${serverUploadLimitMB()} MB, or use the in-browser mode.`,
                 },
                 { status: 413 },
             );

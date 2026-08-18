@@ -1,4 +1,25 @@
 import JSZip from "jszip";
+import { replaceFileExtension } from "@/lib/formats";
+import {
+  browserSupportsWebpEncode,
+  canvasToBlob,
+  decodeImage,
+  isBrowserDecodable,
+} from "@/lib/browser-image";
+
+// Canvas can encode these formats. GIF/TIFF outputs (and HEIC/TIFF inputs,
+// which the browser cannot decode) fall back to the server route.
+const BROWSER_ENCODABLE = new Set(["jpg", "png", "webp"]);
+
+// High-quality single-pass encode. Unlike the compressor there is no byte
+// target, so we use a fixed quality instead of an iterative loop.
+const ENCODE_QUALITY = 0.9;
+
+function mimeTypeFor(format: string): string {
+  if (format === "webp") return "image/webp";
+  if (format === "png") return "image/png";
+  return "image/jpeg";
+}
 
 function getFilenameFromDisposition(header: string | null, fallback: string): string {
   if (!header) {
@@ -14,7 +35,46 @@ function fallbackFilename(file: File, format: string): string {
   return `${file.name.replace(/\.[^/.]+$/, "")}.${extension}`;
 }
 
-export async function convertSingleFile(
+async function convertInBrowser(
+  file: File,
+  format: string,
+): Promise<{ blob: Blob; filename: string }> {
+  const image = await decodeImage(file);
+
+  try {
+    let outputFormat = format;
+
+    if (outputFormat === "webp" && !(await browserSupportsWebpEncode())) {
+      outputFormat = "jpg";
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = image.width;
+    canvas.height = image.height;
+    const context = canvas.getContext("2d");
+
+    if (!context) {
+      throw new Error("Canvas 2D context is unavailable in this browser.");
+    }
+
+    // JPEG has no alpha channel; paint white so transparency doesn't turn black.
+    if (outputFormat === "jpg") {
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    context.drawImage(image.source, 0, 0);
+
+    const quality = outputFormat === "png" ? undefined : ENCODE_QUALITY;
+    const blob = await canvasToBlob(canvas, mimeTypeFor(outputFormat), quality);
+
+    return { blob, filename: replaceFileExtension(file.name, outputFormat) };
+  } finally {
+    image.cleanup();
+  }
+}
+
+async function convertViaServer(
   file: File,
   format: string,
 ): Promise<{ blob: Blob; filename: string }> {
@@ -32,14 +92,10 @@ export async function convertSingleFile(
       | { error?: string }
       | null;
 
-    if (response.status >= 500) {
-      throw new Error(
-        payload?.error ??
-          `Server error while converting ${file.name}. The file may be too large for the hosting limit.`,
-      );
-    }
-
-    throw new Error(payload?.error ?? `Failed to convert ${file.name}.`);
+    throw new Error(
+      payload?.error ??
+        `Failed to convert ${file.name}. This combination is processed server-side, which has a smaller size limit.`,
+    );
   }
 
   const blob = await response.blob();
@@ -49,6 +105,17 @@ export async function convertSingleFile(
   );
 
   return { blob, filename };
+}
+
+export async function convertSingleFile(
+  file: File,
+  format: string,
+): Promise<{ blob: Blob; filename: string }> {
+  if (isBrowserDecodable(file.name) && BROWSER_ENCODABLE.has(format)) {
+    return convertInBrowser(file, format);
+  }
+
+  return convertViaServer(file, format);
 }
 
 export async function convertFilesToZip(

@@ -26,7 +26,7 @@ export default function Home() {
 
   const summary = useMemo(() => {
     if (files.length === 0) {
-      return "Upload one or more images to get started.";
+      return "Upload one or more images to get started. Conversion runs in your browser.";
     }
 
     if (files.length === 1) {
@@ -86,7 +86,8 @@ export default function Home() {
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300">
             Upload a single image or a batch, choose your output format, and download
-            instantly. Supports JPG, PNG, WEBP, TIFF, BMP, GIF, and HEIC/HEIF input.
+            instantly. Conversion runs in your browser with no upload limits for JPG,
+            PNG, WebP, GIF, and BMP — HEIC/HEIF and TIFF are processed server-side.
           </p>
         </header>
 
@@ -161,11 +162,11 @@ export default function Home() {
             },
             {
               title: "HEIC friendly",
-              body: "Import iPhone HEIC/HEIF photos and export them as JPG, PNG, WEBP, and more.",
+              body: "Import iPhone HEIC/HEIF photos and export them as JPG, PNG, WEBP, and more (handled server-side).",
             },
             {
-              title: "Netlify ready",
-              body: "Built for deployment on Netlify with server-side conversion powered by sharp.",
+              title: "Runs in your browser",
+              body: "JPG, PNG, and WebP conversions happen locally and never leave your device, so there are no server size limits.",
             },
           ].map((item) => (
             <article

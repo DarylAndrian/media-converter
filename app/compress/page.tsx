@@ -86,14 +86,14 @@ export default function CompressPage() {
     }
     return `One or more files exceed ${Math.floor(
       COMPRESS_LARGE_FILE_BYTES / (1024 * 1024),
-    )} MB. Large files may use significant server time and could hit upload limits.`;
+    )} MB. Very large images can use a lot of browser memory and may take a while to process.`;
   }, [files]);
 
   const canConvert = files.length > 0 && !loading;
 
   const summary = useMemo(() => {
     if (files.length === 0) {
-      return "Upload one or more images to get started.";
+      return "Upload one or more images to get started. Compression runs in your browser.";
     }
 
     const formatLabel =
@@ -203,9 +203,10 @@ export default function CompressPage() {
             Compress images to any target size
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300">
-            Upload images, pick a target size, and download. Uses an iterative
-            quality + resize loop to fit any byte budget. Supports JPG, PNG, WEBP,
-            GIF, BMP, TIFF, and HEIC input.
+            Upload images, pick a target size, and download. Compression runs in
+            your browser with an iterative quality + resize loop — no upload
+            limits for JPG, PNG, WebP, GIF, and BMP. HEIC and TIFF are processed
+            server-side.
           </p>
         </header>
 
@@ -346,21 +347,12 @@ export default function CompressPage() {
               body: "Reduces quality from 85 → 30 in steps of 5, then resizes by 0.9x and repeats until the target size is met.",
             },
             {
-              title: "Smart format fallbacks",
-              body: "PNG and GIF fall back to JPG when lossless can't fit. BMP, TIFF, and HEIC are converted to JPG.",
+              title: "Runs in your browser",
+              body: "JPG, PNG, WebP, GIF, and BMP are compressed locally and never uploaded, so there are no server size limits.",
             },
             {
-              title: "PDF compression",
-              body: (
-                <>
-                  For PDFs, use the companion Python CLI at{" "}
-                  <code className="rounded bg-slate-800/60 px-1.5 py-0.5 text-xs text-slate-100">
-                    D:\ai-and-code\image-compressor
-                  </code>{" "}
-                  — server-side PDF compression needs Ghostscript which
-                  isn't available on Netlify functions.
-                </>
-              ),
+              title: "Smart format fallbacks",
+              body: "GIF and TIFF targets fall back to PNG in the browser, and oversized PNGs drop to JPEG to hit your budget.",
             },
           ].map((item) => (
             <article
