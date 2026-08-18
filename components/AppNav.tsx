@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { href: "/video", label: "Video" },
   { href: "/video-to-audio", label: "Video to Audio" },
   { href: "/remove-background", label: "Background Remover" },
+  { href: "/edit", label: "Edit" },
 ] as const;
 
 export function AppNav() {
@@ -17,7 +18,7 @@ export function AppNav() {
 
   return (
     <nav className="relative z-10 border-b border-white/10 bg-slate-950/80 backdrop-blur">
-      <div className="mx-auto flex max-w-4xl items-center gap-1 px-6 py-3 sm:px-8">
+      <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-1 px-6 py-3 sm:px-8">
         <Link
           href="/"
           className="mr-4 flex items-center gap-2 text-sm font-semibold tracking-tight text-white"
