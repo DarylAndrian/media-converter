@@ -1,17 +1,7 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import { AppNav } from "@/components/AppNav";
+import { fontVariables } from "./fonts";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: {
@@ -19,11 +9,21 @@ export const metadata: Metadata = {
     template: "%s | Media Converter",
   },
   description:
-    "Convert images and videos between common formats. Free, fast, and private.",
+    "Convert, compress, and edit images and video in your browser. Free, fast, and private.",
   icons: {
     icon: "/logo.webp",
   },
 };
+
+const themeScript = `
+(function () {
+  try {
+    var stored = localStorage.getItem("theme");
+    var dark = stored === "dark" || (!stored && matchMedia("(prefers-color-scheme: dark)").matches);
+    if (dark) document.documentElement.classList.add("dark");
+  } catch (e) {}
+})();
+`;
 
 export default function RootLayout({
   children,
@@ -33,9 +33,11 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
+      className={`${fontVariables} h-full antialiased`}
     >
-      <body className="min-h-full bg-slate-950 font-sans text-slate-100">
+      <body className="min-h-full bg-bg font-sans text-ink">
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <AppNav />
         {children}
       </body>

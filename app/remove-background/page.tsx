@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
+import { Alert } from "@/components/Alert";
+import { Button } from "@/components/Button";
 import { DropZone } from "@/components/DropZone";
+import { ProgressBar } from "@/components/ProgressBar";
+import { ToolShell } from "@/components/ToolShell";
 import { removeBackground } from "@imgly/background-removal";
 
 type QualityMode = "fast" | "high";
@@ -176,6 +180,9 @@ async function removeBackgroundClient(
   });
 }
 
+const CHECKERBOARD =
+  "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCI+CjxyZWN0IHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIgZmlsbD0iI2ZmZiIgZmlsbC1vcGFjaXR5PSIwLjEiLz4KPHJlY3QgeD0iMTAiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIgZmlsbD0iIzAwMCIgZmlsbC1vcGFjaXR5PSIwLjEiLz4KPHJlY3QgeT0iMTAiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIgZmlsbD0iIzAwMCIgZmlsbC1vcGFjaXR5PSIwLjEiLz4KPHJlY3QgeD0iMTAiIHk9IjEwIiB3aWR0aD0iMTAiIGhlaWdodD0iMTAiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIi8+Cjwvc3ZnPg==";
+
 export default function RemoveBackgroundPage() {
   const [file, setFile] = useState<File | null>(null);
   const [originalUrl, setOriginalUrl] = useState<string | null>(null);
@@ -259,204 +266,197 @@ export default function RemoveBackgroundPage() {
   };
 
   return (
-    <div className="relative min-h-full overflow-hidden bg-slate-950 text-slate-100">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.25),_transparent_45%),radial-gradient(circle_at_bottom_right,_rgba(14,165,233,0.18),_transparent_35%)]" />
-
-      <main className="relative mx-auto flex min-h-full w-full max-w-4xl flex-col px-6 py-12 sm:px-8 sm:py-16">
-        <header className="mb-10 text-center sm:text-left">
-          <p className="mb-3 inline-flex rounded-full border border-indigo-400/30 bg-indigo-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-indigo-200">
-            Background Remover
-          </p>
-          <h1 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-            Background Remover
-          </h1>
-          <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300">
-            Remove backgrounds from images with AI-powered edge
-            refinement — right in your browser. Choose between fast
-            processing or high-quality mode with stronger smoothing.
-          </p>
-        </header>
-
-        <section className="rounded-3xl border border-white/10 bg-white/95 p-6 text-slate-900 shadow-2xl shadow-indigo-950/30 backdrop-blur sm:p-8">
-          <div className="space-y-8">
-            {/* Quality Mode Toggle */}
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">
-                Quality mode
-              </label>
-              <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1">
-                <button
-                  type="button"
-                  onClick={() => setQuality("fast")}
-                  disabled={isProcessing}
-                  className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${quality === "fast"
-                    ? "bg-white text-slate-900 shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
-                    }`}
-                >
-                  ⚡ Fast
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setQuality("high")}
-                  disabled={isProcessing}
-                  className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${quality === "high"
-                    ? "bg-white text-slate-900 shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
-                    }`}
-                >
-                  ✨ High Quality
-                </button>
-              </div>
-              <p className="mt-2 text-xs text-slate-500">
-                {quality === "fast"
-                  ? "Uses a quantized model for faster processing with basic edge smoothing."
-                  : "Uses the full-precision model with stronger edge smoothing for cleaner results."}
-              </p>
+    <ToolShell
+      eyebrow="Background Remover"
+      title="Remove backgrounds*in seconds*"
+      description="Cut the subject out of any photo with AI segmentation and edge refinement — right in your browser. Choose between fast processing or high-quality mode with stronger smoothing."
+      features={[
+        {
+          title: "Two quality modes",
+          body: "Fast uses a quantized model with basic smoothing; High uses full precision with stronger edge refinement.",
+        },
+        {
+          title: "Transparent PNG output",
+          body: "Download the result as a PNG with a clean alpha channel, ready for compositing.",
+        },
+        {
+          title: "Stays in the browser",
+          body: "Your images never leave this device. The AI model runs locally on first use and is then cached.",
+        },
+      ]}
+    >
+      <section className="rounded-2xl border border-line bg-surface p-5 shadow-card sm:p-6">
+        <div className="space-y-6">
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-ink">
+              Quality mode
+            </label>
+            <div className="inline-flex gap-1 rounded-xl border border-line bg-surface-2 p-1">
+              <button
+                type="button"
+                onClick={() => setQuality("fast")}
+                disabled={isProcessing}
+                className={`rounded-lg px-4 py-1.5 text-sm font-medium transition ${
+                  quality === "fast"
+                    ? "bg-accent text-on-accent"
+                    : "text-mut hover:text-ink"
+                }`}
+              >
+                Fast
+              </button>
+              <button
+                type="button"
+                onClick={() => setQuality("high")}
+                disabled={isProcessing}
+                className={`rounded-lg px-4 py-1.5 text-sm font-medium transition ${
+                  quality === "high"
+                    ? "bg-accent text-on-accent"
+                    : "text-mut hover:text-ink"
+                }`}
+              >
+                High quality
+              </button>
             </div>
+            <p className="mt-2 text-xs text-mut">
+              {quality === "fast"
+                ? "Quantized model for faster processing with basic edge smoothing."
+                : "Full-precision model with stronger edge smoothing for cleaner results."}
+            </p>
+          </div>
 
-            {!file && (
-              <DropZone
-                files={[]}
-                onFilesChange={handleFilesChange}
-                accept={{
-                  "image/*": [".jpg", ".jpeg", ".png", ".webp"],
-                }}
-                dropLabel="Drag & drop an image here"
-                activeDropLabel="Drop to start"
-                hintLabel="Supports JPG, PNG, and WebP"
-              />
-            )}
+          {!file && (
+            <DropZone
+              files={[]}
+              onFilesChange={handleFilesChange}
+              accept={{
+                "image/*": [".jpg", ".jpeg", ".png", ".webp"],
+              }}
+              dropLabel="Drag & drop an image here"
+              activeDropLabel="Drop to start"
+              hintLabel="Click to browse — JPG, PNG, WebP."
+            />
+          )}
 
-            {file && originalUrl && (
-              <div>
-                <div className="mb-6 flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-medium text-slate-900">
-                      {file.name}
-                    </h3>
-                    <p className="text-sm text-slate-500">
-                      {(
-                        file.size /
-                        (1024 * 1024)
-                      ).toFixed(2)}{" "}
-                      MB
-                    </p>
+          {file && originalUrl && (
+            <div>
+              <div className="mb-5 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <h3 className="truncate text-base font-semibold text-ink">
+                    {file.name}
+                  </h3>
+                  <p className="font-mono text-xs text-mut">
+                    {(file.size / (1024 * 1024)).toFixed(2)} MB
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleFilesChange([])}
+                  disabled={isProcessing}
+                >
+                  Clear
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-ink">Original</p>
+                  <div className="relative aspect-video overflow-hidden rounded-xl border border-line bg-surface-2">
+                    <img
+                      src={originalUrl}
+                      alt="Original"
+                      className="h-full w-full object-contain"
+                    />
                   </div>
-                  <button
-                    onClick={() => handleFilesChange([])}
-                    className="text-sm font-medium text-slate-500 transition-colors hover:text-slate-900"
-                    disabled={isProcessing}
-                  >
-                    Clear
-                  </button>
                 </div>
 
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-slate-700">
-                      Original
-                    </p>
-                    <div className="relative aspect-video overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-ink">Result</p>
+                  <div
+                    className={`relative aspect-video overflow-hidden rounded-xl border border-line ${resultUrl ? "" : "bg-surface-2"}`}
+                    style={
+                      resultUrl
+                        ? { backgroundImage: `url(${CHECKERBOARD})` }
+                        : undefined
+                    }
+                  >
+                    {resultUrl ? (
                       <img
-                        src={originalUrl}
-                        alt="Original"
+                        src={resultUrl}
+                        alt="Result"
                         className="h-full w-full object-contain"
                       />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-slate-700">
-                      Result
-                    </p>
-                    <div className="relative aspect-video overflow-hidden rounded-xl border border-slate-200 bg-slate-100 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCI+CjxyZWN0IHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIgZmlsbD0iI2ZmZiIgZmlsbC1vcGFjaXR5PSIwLjEiLz4KPHJlY3QgeD0iMTAiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIgZmlsbD0iIzAwMCIgZmlsbC1vcGFjaXR5PSIwLjEiLz4KPHJlY3QgeT0iMTAiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIgZmlsbD0iIzAwMCIgZmlsbC1vcGFjaXR5PSIwLjEiLz4KPHJlY3QgeD0iMTAiIHk9IjEwIiB3aWR0aD0iMTAiIGhlaWdodD0iMTAiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIi8+Cjwvc3ZnPg==')]">
-                      {resultUrl ? (
-                        <img
-                          src={resultUrl}
-                          alt="Result"
-                          className="h-full w-full object-contain"
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center">
-                          <span className="text-sm text-slate-500">
-                            {isProcessing
-                              ? progress ||
-                              "Processing..."
-                              : "Not processed yet"}
-                          </span>
-                        </div>
-                      )}
-                    </div>
+                    ) : (
+                      <div className="flex h-full items-center justify-center">
+                        <span className="text-sm text-mut">
+                          {isProcessing ? progress || "Processing..." : "Not processed yet"}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
+              </div>
 
-                <div className="mt-8 flex items-center justify-center gap-4">
-                  {!resultUrl ? (
-                    <button
-                      onClick={processImage}
-                      disabled={isProcessing}
-                      className="rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50"
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+                {!resultUrl ? (
+                  <Button
+                    onClick={processImage}
+                    disabled={isProcessing}
+                    loading={isProcessing}
+                  >
+                    {isProcessing
+                      ? "Processing..."
+                      : "Remove background"}
+                  </Button>
+                ) : (
+                  <>
+                    <Button onClick={handleDownload}>
+                      Download transparent PNG
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        setResultUrl(null);
+                        setResultFilename(null);
+                        setProgress("");
+                        setError(null);
+                        if (objectUrlRef.current) {
+                          URL.revokeObjectURL(objectUrlRef.current);
+                          objectUrlRef.current = null;
+                        }
+                      }}
                     >
-                      {isProcessing
-                        ? "Processing..."
-                        : "Remove Background"}
-                    </button>
-                  ) : (
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={handleDownload}
-                        className="rounded-lg bg-green-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-green-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600"
-                      >
-                        Download Transparent PNG
-                      </button>
-                      <button
-                        onClick={() => {
-                          setResultUrl(null);
-                          setResultFilename(null);
-                          setProgress("");
-                          setError(null);
-                          if (objectUrlRef.current) {
-                            URL.revokeObjectURL(
-                              objectUrlRef.current,
-                            );
-                            objectUrlRef.current =
-                              null;
-                          }
-                        }}
-                        className="rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
-                      >
-                        Re-process
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {isProcessing && (
-                  <p className="mt-4 text-center text-sm text-slate-500">
-                    {progress}
-                  </p>
-                )}
-
-                {error && (
-                  <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                    {error}
-                  </div>
-                )}
-
-                {resultUrl && !isProcessing && (
-                  <p className="mt-4 text-center text-xs text-slate-400">
-                    Processed in your browser with
-                    {quality === "fast"
-                      ? " basic edge smoothing."
-                      : " AI-powered edge refinement."}
-                  </p>
+                      Re-process
+                    </Button>
+                  </>
                 )}
               </div>
-            )}
-          </div>
-        </section>
-      </main>
-    </div>
+
+              {isProcessing && (
+                <div className="mt-5">
+                  <ProgressBar label={progress || "Processing..."} />
+                </div>
+              )}
+
+              {error && (
+                <div className="mt-4">
+                  <Alert tone="error">{error}</Alert>
+                </div>
+              )}
+
+              {resultUrl && !isProcessing && (
+                <p className="mt-4 text-center font-mono text-xs text-mut">
+                  Processed in your browser with
+                  {quality === "fast"
+                    ? " basic edge smoothing"
+                    : " AI-powered edge refinement"}
+                  .
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      </section>
+    </ToolShell>
   );
 }

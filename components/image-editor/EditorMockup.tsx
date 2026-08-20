@@ -30,6 +30,7 @@ import {
 } from "@/components/image-editor/editor-tools";
 import { canvasToBlob } from "@/lib/browser-image";
 import { downloadBlob } from "@/lib/download";
+import { Button } from "@/components/Button";
 
 interface EditorMockupProps {
   file: File | null;
@@ -157,7 +158,7 @@ function ChipGroup<T extends string>({
   onChange: (id: T) => void;
 }) {
   return (
-    <div className="inline-flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1">
+    <div className="inline-flex flex-wrap gap-1 rounded-xl border border-line bg-surface-2 p-1">
       {items.map((item) => {
         const selected = item.id === value;
 
@@ -168,8 +169,8 @@ function ChipGroup<T extends string>({
             onClick={() => onChange(item.id)}
             className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
               selected
-                ? "bg-white text-slate-900 shadow-sm"
-                : "text-slate-500 hover:text-slate-700"
+                ? "bg-accent text-on-accent"
+                : "text-mut hover:text-ink"
             }`}
           >
             {item.label}
@@ -201,8 +202,8 @@ function ColorDots({
             aria-label={color.id}
             onClick={() => onChange(color.id)}
             className={`h-7 w-7 rounded-full transition ${
-              selected ? "ring-2 ring-indigo-500 ring-offset-2" : "hover:scale-105"
-            } ${color.border ? "border border-slate-200" : ""}`}
+              selected ? "ring-2 ring-accent ring-offset-2 ring-offset-surface" : "hover:scale-105"
+            } ${color.border ? "border border-line" : ""}`}
             style={{ backgroundColor: color.hex }}
           />
         );
@@ -222,16 +223,16 @@ function SizeSlider({
 }) {
   return (
     <label className="flex min-w-[160px] flex-1 items-center gap-3">
-      <span className="shrink-0 text-xs font-medium text-slate-500">{label}</span>
+      <span className="shrink-0 text-xs font-medium text-mut">{label}</span>
       <input
         type="range"
         min={1}
         max={100}
         value={value}
         onChange={(event) => onChange(Number(event.target.value))}
-        className="h-1.5 w-full cursor-pointer accent-indigo-600"
+        className="h-1.5 w-full cursor-pointer accent-accent"
       />
-      <span className="w-8 text-right text-xs font-medium tabular-nums text-slate-600">
+      <span className="w-8 text-right text-xs font-medium tabular-nums text-mut">
         {value}
       </span>
     </label>
@@ -388,10 +389,10 @@ export function EditorMockup({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-slate-900">
+          <p className="truncate text-sm font-semibold text-ink">
             {file ? file.name : "No image selected"}
           </p>
-          <p className="text-xs text-slate-500">
+          <p className="font-mono text-xs text-mut">
             {file
               ? formatFileSize(file.size)
               : "Upload a photo, then annotate it in the browser."}
@@ -399,45 +400,36 @@ export function EditorMockup({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
+          <Button
+            variant="secondary"
+            size="sm"
             disabled={!canUndo}
             onClick={() => dispatch({ type: "undo" })}
-            className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:text-slate-400 disabled:hover:bg-white"
           >
             Undo
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
             disabled={!canRedo}
             onClick={() => dispatch({ type: "redo" })}
-            className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:text-slate-400 disabled:hover:bg-white"
           >
             Redo
-          </button>
-          <button
-            type="button"
-            disabled={!canEdit || downloading}
-            onClick={handleDownload}
-            className="inline-flex h-9 items-center rounded-lg bg-indigo-600 px-3 text-xs font-semibold text-white transition hover:bg-indigo-500 disabled:bg-slate-200 disabled:text-slate-400"
-          >
+          </Button>
+          <Button size="sm" disabled={!canEdit || downloading} onClick={handleDownload}>
             {downloading ? "Downloading..." : "Download"}
-          </button>
+          </Button>
           {file && (
-            <button
-              type="button"
-              onClick={onClear}
-              className="inline-flex h-9 items-center rounded-lg px-3 text-xs font-medium text-slate-500 transition-colors hover:text-slate-900"
-            >
+            <Button variant="ghost" size="sm" onClick={onClear}>
               Clear
-            </button>
+            </Button>
           )}
         </div>
       </div>
 
-      <p className="text-xs text-slate-400">{TOOL_HINTS[tool]}</p>
+      <p className="text-xs text-mut">{TOOL_HINTS[tool]}</p>
 
-      <div className="relative flex min-h-[360px] items-center justify-center overflow-hidden rounded-2xl bg-slate-900 sm:min-h-[440px]">
+      <div className="relative flex min-h-[360px] items-center justify-center overflow-hidden rounded-2xl bg-[#171614] dark:border dark:border-line sm:min-h-[440px]">
         {previewUrl && image && canvasSize.width > 0 ? (
           <div className="relative inline-block max-h-[440px] max-w-full">
             <EditorCanvas
@@ -525,7 +517,7 @@ export function EditorMockup({
         )}
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">
+      <div className="rounded-2xl border border-line bg-surface-2 px-4 py-3">
         {tool === "pixelate" && (
           <OptionRow>
             <ChipGroup
@@ -581,8 +573,8 @@ export function EditorMockup({
               }}
               className={`flex flex-col items-center gap-1.5 rounded-2xl px-2 py-3 text-xs font-semibold transition ${
                 selected
-                  ? "bg-indigo-600 text-white shadow-sm"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900"
+                  ? "bg-accent text-on-accent"
+                  : "bg-surface-2 text-mut hover:bg-line hover:text-ink"
               }`}
             >
               <ToolIcon tool={item.id} />

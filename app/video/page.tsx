@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Alert } from "@/components/Alert";
+import { Button } from "@/components/Button";
 import { DropZone } from "@/components/DropZone";
+import { ProgressBar } from "@/components/ProgressBar";
+import { ToolShell } from "@/components/ToolShell";
 import {
   convertSingleVideo,
   convertVideosToZip,
@@ -53,27 +57,27 @@ export default function VideoPage() {
 
   const summary = useMemo(() => {
     if (!isReady && !isLoading && state === "error") {
-      return "Video converter failed to load. Refresh the page to try again.";
+      return "The converter engine failed to load. Refresh the page to try again.";
     }
 
     if (isLoading) {
-      if (loadProgress !== null && loadProgress >= 92 && loadProgress < 100) {
-        return `Initializing converter engine... ${loadProgress}%. Compiling WASM can take up to a minute on first load.`;
-      }
-
       if (loadProgress !== null && loadProgress < 92) {
-        return `Downloading converter engine... ${loadProgress}% complete. This is a one-time download (~31 MB) and will be cached for future visits.`;
+        return `Downloading the converter engine — one-time, ~31 MB, cached for future visits.`;
       }
 
-      return "Loading converter engine...";
+      if (loadProgress !== null && loadProgress >= 92 && loadProgress < 100) {
+        return `Initializing the converter engine. Compiling WASM can take up to a minute on first load.`;
+      }
+
+      return "Loading the converter engine...";
     }
 
     if (state === "idle") {
-      return "Preparing video converter...";
+      return "Preparing the video converter...";
     }
 
     if (files.length === 0) {
-      return "Upload one or more videos to get started. Files are converted locally and never uploaded.";
+      return "Add one or more videos to get started. Files are converted locally and never uploaded.";
     }
 
     if (files.length === 1) {
@@ -157,114 +161,91 @@ export default function VideoPage() {
   })();
 
   return (
-    <div className="relative min-h-full overflow-hidden bg-slate-950 text-slate-100">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.25),_transparent_45%),radial-gradient(circle_at_bottom_right,_rgba(14,165,233,0.18),_transparent_35%)]" />
-
-      <main className="relative mx-auto flex min-h-full w-full max-w-4xl flex-col px-6 py-12 sm:px-8 sm:py-16">
-        <header className="mb-10 text-center sm:text-left">
-          <p className="mb-3 inline-flex rounded-full border border-indigo-400/30 bg-indigo-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-indigo-200">
-            Video Converter
-          </p>
-          <h1 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-            Convert videos to any common format
-          </h1>
-          <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300">
-            Upload a single video or a batch, choose your output format, and download
-            instantly. Supports MP4, MOV, AVI, MKV, and WEBM. All processing happens in
-            your browser.
-          </p>
-        </header>
-
-        <section className="rounded-3xl border border-white/10 bg-white/95 p-6 text-slate-900 shadow-2xl shadow-indigo-950/30 backdrop-blur sm:p-8">
-          <div className="mb-6 grid gap-4 sm:grid-cols-[1fr_220px] sm:items-end">
-            <div>
-              <label
-                htmlFor="video-output-format"
-                className="mb-2 block text-sm font-medium text-slate-700"
-              >
-                Output format
-              </label>
-              <select
-                id="video-output-format"
-                value={format}
-                onChange={(event) => setFormat(event.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
-              >
-                {FORMAT_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleConvert}
-              disabled={!canConvert}
-              className="inline-flex h-12 items-center justify-center rounded-xl bg-indigo-600 px-5 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-300"
+    <ToolShell
+      eyebrow="Video Converter"
+      title="Convert videos to*any common format*"
+      description="Upload a single video or a batch, choose your output format, and download instantly. Supports MP4, MOV, AVI, MKV, and WEBM. All processing happens in your browser."
+      features={[
+        {
+          title: "Single or batch",
+          body: "Convert one video or upload many files and receive a ZIP archive.",
+        },
+        {
+          title: "Private by design",
+          body: "Videos never leave your device. Conversion runs entirely in your browser.",
+        },
+        {
+          title: "No upload limits",
+          body: "No server size caps. Browser memory is the only practical constraint.",
+        },
+      ]}
+    >
+      <section className="rounded-2xl border border-line bg-surface p-5 shadow-card sm:p-6">
+        <div className="mb-5 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
+          <div className="sm:max-w-sm">
+            <label
+              htmlFor="video-output-format"
+              className="mb-1.5 block text-sm font-medium text-ink"
             >
-              {buttonLabel}
-            </button>
+              Output format
+            </label>
+            <select
+              id="video-output-format"
+              value={format}
+              onChange={(event) => setFormat(event.target.value)}
+              className="w-full rounded-xl border border-line-strong bg-surface px-4 py-3 font-mono text-sm font-medium text-ink outline-none transition focus:border-accent focus:ring-4 focus:ring-accent-soft"
+            >
+              {FORMAT_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </div>
 
+          <Button onClick={handleConvert} disabled={!canConvert} loading={loading && isReady}>
+            {buttonLabel}
+          </Button>
+        </div>
+
+        <div className="space-y-4">
           <DropZone
             files={files}
             onFilesChange={setFiles}
             accept={VIDEO_ACCEPT}
             dropLabel="Drag and drop videos here"
             activeDropLabel="Drop your videos here"
-            hintLabel="or click to browse. Supports MP4, MOV, AVI, MKV, and WEBM."
+            hintLabel="Click to browse — MP4, MOV, AVI, MKV, WEBM."
           />
 
-          <div className="mt-6 space-y-3">
-            <p className="text-sm text-slate-600">{summary}</p>
+          {isLoading && loadProgress !== null && loadProgress < 100 && (
+            <ProgressBar value={loadProgress} label="Loading converter engine" />
+          )}
 
-            {sizeWarning && (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                {sizeWarning}
-              </div>
-            )}
+          {progress &&
+            (progress.fileProgress !== undefined && progress.total === 1 ? (
+              <ProgressBar
+                value={progress.fileProgress * 100}
+                label={`Converting ${files[0]?.name ?? "video"}`}
+              />
+            ) : (
+              <ProgressBar
+                value={(progress.completed / progress.total) * 100}
+                label={`Converting ${progress.completed} of ${progress.total}`}
+              />
+            ))}
 
-            {(error || ffmpegError) && (
-              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                {error ?? ffmpegError}
-              </div>
-            )}
+          <p className="text-sm leading-6 text-mut">{summary}</p>
 
-            {successMessage && (
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                {successMessage}
-              </div>
-            )}
-          </div>
-        </section>
+          {sizeWarning && <Alert tone="warning">{sizeWarning}</Alert>}
 
-        <section className="mt-8 grid gap-4 sm:grid-cols-3">
-          {[
-            {
-              title: "Single or batch",
-              body: "Convert one video or upload many files and receive a ZIP archive.",
-            },
-            {
-              title: "Private by design",
-              body: "Videos never leave your device. Conversion runs entirely in your browser.",
-            },
-            {
-              title: "No upload limits",
-              body: "No server size caps. Browser memory is the only practical constraint.",
-            },
-          ].map((item) => (
-            <article
-              key={item.title}
-              className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur"
-            >
-              <h2 className="text-sm font-semibold text-white">{item.title}</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-300">{item.body}</p>
-            </article>
-          ))}
-        </section>
-      </main>
-    </div>
+          {(error || ffmpegError) && (
+            <Alert tone="error">{error ?? ffmpegError}</Alert>
+          )}
+
+          {successMessage && <Alert tone="success">{successMessage}</Alert>}
+        </div>
+      </section>
+    </ToolShell>
   );
 }

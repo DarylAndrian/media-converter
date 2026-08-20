@@ -1,7 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Alert } from "@/components/Alert";
+import { Button } from "@/components/Button";
 import { DropZone } from "@/components/DropZone";
+import { ProgressBar } from "@/components/ProgressBar";
+import { ToolShell } from "@/components/ToolShell";
 import {
   COMPRESS_LARGE_FILE_BYTES,
   compressFilesToZip,
@@ -56,6 +60,9 @@ function inputValueForBytes(bytes: number, unit: SizeUnit): number {
     : Math.round(bytes / 1024);
 }
 
+const FIELD_CLASSES =
+  "w-full rounded-xl border border-line-strong bg-surface px-4 py-3 font-mono text-sm font-medium text-ink outline-none transition focus:border-accent focus:ring-4 focus:ring-accent-soft";
+
 export default function CompressPage() {
   const [files, setFiles] = useState<File[]>([]);
   const [format, setFormat] = useState<CompressFormatPreference>("keep");
@@ -93,7 +100,7 @@ export default function CompressPage() {
 
   const summary = useMemo(() => {
     if (files.length === 0) {
-      return "Upload one or more images to get started. Compression runs in your browser.";
+      return "Add one or more images to get started. Compression runs in your browser.";
     }
 
     const formatLabel =
@@ -191,180 +198,143 @@ export default function CompressPage() {
   });
 
   return (
-    <div className="relative min-h-full overflow-hidden bg-slate-950 text-slate-100">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.25),_transparent_45%),radial-gradient(circle_at_bottom_right,_rgba(14,165,233,0.18),_transparent_35%)]" />
+    <ToolShell
+      eyebrow="Image Compressor"
+      title="Compress images to a*target size*"
+      description="Upload images, pick a budget, and download. An iterative quality + resize loop runs in your browser — no upload limits for JPG, PNG, WebP, GIF, and BMP. HEIC and TIFF are processed server-side."
+      features={[
+        {
+          title: "Iterative quality loop",
+          body: "Reduces quality from 85 → 30 in steps of 5, then resizes by 0.9x and repeats until the target size is met.",
+        },
+        {
+          title: "Runs in your browser",
+          body: "JPG, PNG, WebP, GIF, and BMP are compressed locally and never uploaded.",
+        },
+        {
+          title: "Smart format fallbacks",
+          body: "GIF and TIFF targets fall back to PNG in the browser, and oversized PNGs drop to JPEG to hit your budget.",
+        },
+      ]}
+    >
+      <section className="rounded-2xl border border-line bg-surface p-5 shadow-card sm:p-6">
+        <div className="mb-4 grid gap-4 sm:grid-cols-2">
+          <div>
+            <label
+              htmlFor="compress-output-format"
+              className="mb-1.5 block text-sm font-medium text-ink"
+            >
+              Output format
+            </label>
+            <select
+              id="compress-output-format"
+              value={format}
+              onChange={(event) =>
+                setFormat(event.target.value as CompressFormatPreference)
+              }
+              className={FIELD_CLASSES}
+            >
+              {FORMAT_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
 
-      <main className="relative mx-auto flex min-h-full w-full max-w-4xl flex-col px-6 py-12 sm:px-8 sm:py-16">
-        <header className="mb-10 text-center sm:text-left">
-          <p className="mb-3 inline-flex rounded-full border border-indigo-400/30 bg-indigo-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-indigo-200">
-            Image Compressor
-          </p>
-          <h1 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-            Compress images to any target size
-          </h1>
-          <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300">
-            Upload images, pick a target size, and download. Compression runs in
-            your browser with an iterative quality + resize loop — no upload
-            limits for JPG, PNG, WebP, GIF, and BMP. HEIC and TIFF are processed
-            server-side.
-          </p>
-        </header>
-
-        <section className="rounded-3xl border border-white/10 bg-white/95 p-6 text-slate-900 shadow-2xl shadow-indigo-950/30 backdrop-blur sm:p-8">
-          <div className="mb-6 grid gap-4 sm:grid-cols-2 sm:items-end">
-            <div>
-              <label
-                htmlFor="compress-output-format"
-                className="mb-2 block text-sm font-medium text-slate-700"
-              >
-                Output format
-              </label>
+          <div>
+            <label
+              htmlFor="compress-target-size"
+              className="mb-1.5 block text-sm font-medium text-ink"
+            >
+              Target size
+            </label>
+            <div className="flex gap-2">
+              <input
+                id="compress-target-size"
+                type="number"
+                min={1}
+                step={sizeUnit === "mb" ? 0.1 : 10}
+                value={sizeValue}
+                onChange={(event) => {
+                  const next = Number(event.target.value);
+                  if (Number.isFinite(next) && next > 0) {
+                    setSizeValue(next);
+                  }
+                }}
+                className={FIELD_CLASSES}
+              />
               <select
-                id="compress-output-format"
-                value={format}
-                onChange={(event) =>
-                  setFormat(event.target.value as CompressFormatPreference)
-                }
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+                aria-label="Size unit"
+                value={sizeUnit}
+                onChange={(event) => {
+                  const nextUnit = event.target.value as SizeUnit;
+                  setSizeUnit(nextUnit);
+                  setSizeValue(inputValueForBytes(targetBytes, nextUnit));
+                }}
+                className={FIELD_CLASSES.replace("w-full", "w-24")}
               >
-                {FORMAT_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
+                <option value="kb">KB</option>
+                <option value="mb">MB</option>
               </select>
             </div>
+          </div>
+        </div>
 
-            <div>
-              <label
-                htmlFor="compress-target-size"
-                className="mb-2 block text-sm font-medium text-slate-700"
+        <div className="mb-5 flex flex-wrap items-center gap-2">
+          <span className="mr-1 font-mono text-xs font-medium tracking-wider text-mut uppercase">
+            Presets
+          </span>
+          {SIZE_PRESETS.map((preset) => {
+            const isActive = currentPresetMatch?.label === preset.label;
+            return (
+              <button
+                key={preset.label}
+                type="button"
+                onClick={() => handlePresetClick(preset.kilobytes)}
+                className={`rounded-full px-3 py-1.5 font-mono text-xs font-semibold transition ${
+                  isActive
+                    ? "bg-accent text-on-accent"
+                    : "border border-line-strong bg-surface text-mut hover:bg-surface-2 hover:text-ink"
+                }`}
               >
-                Target size
-              </label>
-              <div className="flex gap-2">
-                <input
-                  id="compress-target-size"
-                  type="number"
-                  min={1}
-                  step={sizeUnit === "mb" ? 0.1 : 10}
-                  value={sizeValue}
-                  onChange={(event) => {
-                    const next = Number(event.target.value);
-                    if (Number.isFinite(next) && next > 0) {
-                      setSizeValue(next);
-                    }
-                  }}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
-                />
-                <select
-                  aria-label="Size unit"
-                  value={sizeUnit}
-                  onChange={(event) => {
-                    const nextUnit = event.target.value as SizeUnit;
-                    setSizeUnit(nextUnit);
-                    setSizeValue(inputValueForBytes(targetBytes, nextUnit));
-                  }}
-                  className="rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-medium text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
-                >
-                  <option value="kb">KB</option>
-                  <option value="mb">MB</option>
-                </select>
-              </div>
-            </div>
-          </div>
+                {preset.label}
+              </button>
+            );
+          })}
+        </div>
 
-          <div className="mb-6 flex flex-wrap gap-2">
-            <span className="text-xs font-medium uppercase tracking-wider text-slate-500">
-              Presets:
-            </span>
-            {SIZE_PRESETS.map((preset) => {
-              const isActive = currentPresetMatch?.label === preset.label;
-              return (
-                <button
-                  key={preset.label}
-                  type="button"
-                  onClick={() => handlePresetClick(preset.kilobytes)}
-                  className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
-                    isActive
-                      ? "bg-indigo-600 text-white"
-                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                  }`}
-                >
-                  {preset.label}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="mb-6 flex justify-end">
-            <button
-              type="button"
-              onClick={handleConvert}
-              disabled={!canConvert}
-              className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-indigo-600 px-5 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-300 sm:w-auto"
-            >
-              {buttonLabel}
-            </button>
-          </div>
-
+        <div className="space-y-4">
           <DropZone
             files={files}
             onFilesChange={setFiles}
             accept={IMAGE_ACCEPT}
             dropLabel="Drag and drop images here"
             activeDropLabel="Drop your images here"
-            hintLabel="or click to browse. Supports JPG, PNG, WEBP, TIFF, BMP, GIF, HEIC, and HEIF."
+            hintLabel="Click to browse — JPG, PNG, WEBP, TIFF, BMP, GIF, HEIC, HEIF."
           />
 
-          <div className="mt-6 space-y-3">
-            <p className="text-sm text-slate-600">{summary}</p>
-
-            {sizeWarning && (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                {sizeWarning}
-              </div>
-            )}
-
-            {error && (
-              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                {error}
-              </div>
-            )}
-
-            {successMessage && (
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                {successMessage}
-              </div>
-            )}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm leading-6 text-mut">{summary}</p>
+            <Button onClick={handleConvert} disabled={!canConvert} loading={loading}>
+              {buttonLabel}
+            </Button>
           </div>
-        </section>
 
-        <section className="mt-8 grid gap-4 sm:grid-cols-3">
-          {[
-            {
-              title: "Iterative quality loop",
-              body: "Reduces quality from 85 → 30 in steps of 5, then resizes by 0.9x and repeats until the target size is met.",
-            },
-            {
-              title: "Runs in your browser",
-              body: "JPG, PNG, WebP, GIF, and BMP are compressed locally and never uploaded, so there are no server size limits.",
-            },
-            {
-              title: "Smart format fallbacks",
-              body: "GIF and TIFF targets fall back to PNG in the browser, and oversized PNGs drop to JPEG to hit your budget.",
-            },
-          ].map((item) => (
-            <article
-              key={item.title}
-              className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur"
-            >
-              <h2 className="text-sm font-semibold text-white">{item.title}</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-300">{item.body}</p>
-            </article>
-          ))}
-        </section>
-      </main>
-    </div>
+          {progress && (
+            <ProgressBar
+              value={(progress.completed / progress.total) * 100}
+              label={`Compressing ${progress.completed} of ${progress.total}`}
+            />
+          )}
+
+          {sizeWarning && <Alert tone="warning">{sizeWarning}</Alert>}
+
+          {error && <Alert tone="error">{error}</Alert>}
+
+          {successMessage && <Alert tone="success">{successMessage}</Alert>}
+        </div>
+      </section>
+    </ToolShell>
   );
 }
