@@ -259,13 +259,6 @@ export function EditorMockup({
   onClear,
 }: EditorMockupProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const textDraftRef = useRef<{
-    x: number;
-    y: number;
-    left: number;
-    top: number;
-    value: string;
-  } | null>(null);
 
   const [tool, setTool] = useState<EditorToolId>("pixelate");
   const [pixelateMode, setPixelateMode] = useState<PixelateModeId>("mosaic");
@@ -290,15 +283,9 @@ export function EditorMockup({
   } | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [history, dispatch] = useReducer(historyReducer, { ops: [], future: [] });
-
-  textDraftRef.current = textDraft;
+  const [cssScale, setCssScale] = useState(1);
 
   useEffect(() => {
-    dispatch({ type: "reset" });
-    setTextDraft(null);
-    setImage(null);
-    setCanvasSize({ width: 0, height: 0 });
-
     if (!previewUrl) {
       return;
     }
@@ -310,6 +297,20 @@ export function EditorMockup({
     };
     img.src = previewUrl;
   }, [previewUrl]);
+
+  useEffect(() => {
+    const el = canvasRef.current;
+    if (!el || canvasSize.height <= 0) {
+      return;
+    }
+
+    const observer = new ResizeObserver(() => {
+      setCssScale(el.getBoundingClientRect().height / canvasSize.height);
+    });
+    observer.observe(el);
+
+    return () => observer.disconnect();
+  }, [canvasSize.height]);
 
   const commitTextDraft = useCallback(
     (draft: typeof textDraft) => {
@@ -380,10 +381,6 @@ export function EditorMockup({
   const canEdit = Boolean(file && image);
   const canUndo = history.ops.length > 0;
   const canRedo = history.future.length > 0;
-  const cssScale =
-    canvasRef.current && canvasSize.height > 0
-      ? canvasRef.current.getBoundingClientRect().height / canvasSize.height
-      : 1;
 
   return (
     <div className="space-y-4">
@@ -454,7 +451,7 @@ export function EditorMockup({
               }}
               onCommit={(op) => dispatch({ type: "commit", op })}
               onRequestText={(point, css) => {
-                commitTextDraft(textDraftRef.current);
+                commitTextDraft(textDraft);
                 setTextDraft({
                   x: point.x,
                   y: point.y,
@@ -472,7 +469,7 @@ export function EditorMockup({
                   setTextDraft({ ...textDraft, value: event.target.value })
                 }
                 onBlur={() => {
-                  commitTextDraft(textDraftRef.current);
+                  commitTextDraft(textDraft);
                   setTextDraft(null);
                 }}
                 onKeyDown={(event) => {
@@ -482,7 +479,6 @@ export function EditorMockup({
                   }
                   if (event.key === "Escape") {
                     event.preventDefault();
-                    textDraftRef.current = null;
                     setTextDraft(null);
                   }
                 }}
@@ -567,7 +563,7 @@ export function EditorMockup({
               key={item.id}
               type="button"
               onClick={() => {
-                commitTextDraft(textDraftRef.current);
+                commitTextDraft(textDraft);
                 setTextDraft(null);
                 setTool(item.id);
               }}

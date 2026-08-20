@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { EditorMockup } from "@/components/image-editor/EditorMockup";
 import { ToolShell } from "@/components/ToolShell";
 
@@ -8,22 +8,19 @@ export default function EditPage() {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!file) {
-      setPreviewUrl(null);
+  const handleFilesChange = (files: File[]) => {
+    const nextFile = files[0] ?? null;
+
+    if (nextFile && nextFile === file) {
       return;
     }
 
-    const url = URL.createObjectURL(file);
-    setPreviewUrl(url);
-
-    return () => {
-      URL.revokeObjectURL(url);
-    };
-  }, [file]);
-
-  const handleFilesChange = (files: File[]) => {
-    setFile(files[0] ?? null);
+    const nextUrl = nextFile ? URL.createObjectURL(nextFile) : null;
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setFile(nextFile);
+    setPreviewUrl(nextUrl);
   };
 
   return (
@@ -48,10 +45,11 @@ export default function EditPage() {
     >
       <section className="rounded-2xl border border-line bg-surface p-4 shadow-card sm:p-6">
         <EditorMockup
+          key={previewUrl ?? "empty"}
           file={file}
           previewUrl={previewUrl}
           onFilesChange={handleFilesChange}
-          onClear={() => setFile(null)}
+          onClear={() => handleFilesChange([])}
         />
       </section>
     </ToolShell>

@@ -1,13 +1,15 @@
 # Media Converter
 
-A web app for converting images between common formats. Upload one file or many, pick an output format, and download the result instantly.
+A suite of browser-based tools for images and video: convert images and videos between formats, compress images to a target size, extract audio from video, remove photo backgrounds with AI, and annotate photos. Everything runs locally — files never leave your device.
 
 ## Features
 
-- Drag-and-drop or browse to upload images
-- Single-file download or batch conversion as ZIP
-- Input formats: JPG, JPEG, PNG, WEBP, TIFF, BMP, GIF, HEIC, HEIF
-- Output formats: JPG, PNG, WEBP, TIFF, GIF
+- **Image converter** — drag-and-drop or browse, single-file download or batch conversion as ZIP. Inputs: JPG, PNG, WEBP, TIFF, BMP, GIF, HEIC, HEIF. Outputs: JPG, PNG, WEBP, TIFF, GIF
+- **Compressor** — iterative quality + resize loop to hit a target size (500 KB – 5 MB presets)
+- **Video converter** — MP4, MOV, AVI, MKV, WEBM via ffmpeg WASM in the browser
+- **Video → audio** — extract MP3, WAV, M4A, OGG, FLAC, or OPUS
+- **Background remover** — client-side AI segmentation with edge smoothing (fast / high quality)
+- **Image editor** — pixelate, blur, shapes, text, and brush annotation with undo/redo
 
 ## Local development
 

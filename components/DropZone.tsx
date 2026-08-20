@@ -52,20 +52,36 @@ export function DropZone({
   activeDropLabel = "Drop your files here",
   hintLabel = "or click to browse.",
 }: DropZoneProps) {
-  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<(string | null)[]>([]);
 
   useEffect(() => {
-    const urls = files.map((file) =>
-      isPreviewable(file) ? URL.createObjectURL(file) : null,
-    );
-    setPreviewUrls(urls);
+    let cancelled = false;
+    const readers: FileReader[] = [];
+
+    files.forEach((file, index) => {
+      if (!isPreviewable(file)) {
+        return;
+      }
+
+      const reader = new FileReader();
+      readers.push(reader);
+      reader.onload = () => {
+        if (cancelled) {
+          return;
+        }
+        const result = typeof reader.result === "string" ? reader.result : null;
+        setPreviewUrls((prev) => {
+          const next = [...prev];
+          next[index] = result;
+          return next;
+        });
+      };
+      reader.readAsDataURL(file);
+    });
 
     return () => {
-      urls.forEach((url) => {
-        if (url) {
-          URL.revokeObjectURL(url);
-        }
-      });
+      cancelled = true;
+      readers.forEach((reader) => reader.abort());
     };
   }, [files]);
 
