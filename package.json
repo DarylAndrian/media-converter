@@ -8,6 +8,7 @@
     "start": "node ./node_modules/next/dist/bin/next start",
     "lint": "node ./node_modules/eslint/bin/eslint.js .",
     "mcp": "node ./node_modules/tsx/dist/cli.mjs mcp/server.ts",
+    "mcp:http": "node ./node_modules/tsx/dist/cli.mjs mcp/server-http.ts",
     "postinstall": "node scripts/postinstall-sharp.js && node scripts/copy-ffmpeg-core.js"
   },
   "dependencies": {
